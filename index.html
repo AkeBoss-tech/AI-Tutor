@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Personal AI Language Tutor</title>
+    <!-- Add Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <div>
+            <h1 class="h-1">Personal AI Tutor</h1>
+            <label for="voiceSelect">Select a Voice:</label>
+            <select id="voiceSelect"></select>
+        </div>
+        <br>
+        <div class="form-group">
+            <label for="apiKeyInput">Enter your ChatGPT API Key:</label>
+            <input type="text" class="form-control" id="apiKeyInput" placeholder="API Key" value="">
+        </div>
+        <div class="card">
+            <div class="card-body" id="chatContainer">
+                <!-- Chat messages will be displayed here -->
+                <div class="alert">Welcome to the ESL student helper!</div>
+            </div>
+        </div>
+        <div class="card mt-3">
+            <div class="card-body">
+                <textarea class="form-control mb-3" id="textInput" rows="2" placeholder="Edit your text"></textarea>
+                <button class="btn btn-primary ml-2" onclick="toggleRecording()" id="recorderToggle">Start Recording</button>
+                <button class="btn btn-success" onclick="continueConversation()">Ask Tutor</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Bootstrap JS and your custom script -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    
+    <script>
+        // Your custom JavaScript code will go here
+        // Global variables
+        let recognition;
+        let isRecording = false;
+        const chatContainer = document.getElementById('chatContainer');
+        const textInput = document.getElementById('textInput');
+        const apiKeyInput = document.getElementById('apiKeyInput');
+        const recorderToggle = document.getElementById('recorderToggle');
+        const voiceSelect = document.getElementById("voiceSelect");
+
+        const preprompt = "You are a tutor for students interested in learning English. You must help them learn new vocabulary and help them speak in realistic scenarios. Use simple language and be sure to define complicated words.";
+        let conversation = [preprompt, "AI Tutor: Hi! It's nice to meet you!"];
+
+        window.onload(
+            doStuff()
+        )
+
+        function doStuff() {
+            speak("")
+            createChatMessage("AI Tutor: Hi! It's nice to meet you!")
+            apiKeyInput.value = (new URL(document.location)).searchParams.get('apiKey');
+        }
+
+        function returnFullString() {
+            let fullString = "";
+            for (let i = 0; i < conversation.length; i++) {
+                fullString += conversation[i] + " \n";
+            }
+            return fullString;
+        }
+
+        // Function to create a new chat message element
+        function createChatMessage(text, isUser = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = isUser ? 'alert alert-primary' : 'alert alert-secondary';
+            
+            const textSpan = document.createElement('span');
+            textSpan.textContent = text;
+
+            const speakerIcon = document.createElement('i');
+            speakerIcon.className = 'fas fa-volume-up ml-2'; // Assuming you have Font Awesome for the speaker icon
+
+            speakerIcon.addEventListener('click', () => {
+                speak(text);
+            });
+
+            messageDiv.appendChild(textSpan);
+            messageDiv.appendChild(speakerIcon);
+            
+            chatContainer.appendChild(messageDiv);
+            let name = isUser ? 'Student: ' : 'AI Tutor: ';
+            conversation.push(isUser +  text);
+        }
+
+        function toggleRecording() {
+            if (!isRecording) {
+                recorderToggle.innerText = "Stop Recording";
+                recognition = new webkitSpeechRecognition();
+                recognition.continuous = true;
+                recognition.interimResults = true;
+
+                recognition.onresult = event => {
+                    let text ="";
+                    for (let i = 0; i < event.results.length; i++) {
+                        text += event.results[i][0].transcript;
+                    }
+                    textInput.value = text;
+                    console.log(text);
+                };
+
+                recognition.start();
+            } else {
+                recognition.stop();
+                recorderToggle.innerText = "Start Recording";
+            }
+
+            isRecording = !isRecording;
+        }
+
+        // Function to call ChatGPT API for text-to-speech
+        async function continueConversation() {
+            const textToSpeak = textInput.value;
+            if (textToSpeak.length === 0) {
+                createChatMessage('Please enter something to send!');
+                return;
+            }
+            createChatMessage(`You: ${textToSpeak}`, true);
+            isRecording = false;
+            textInput.value = "";
+            if (recognition != undefined) {
+                recognition.stop();
+                recorderToggle.innerText = "Start Recording";
+            }
+
+            const apiKey = apiKeyInput.value.trim(); // Get the API key from the input
+            
+            if (apiKey === '') {
+                createChatMessage("AI Tutor: Sorry you haven't entered your API key, so I can't respond. ");
+                return;
+            }
+
+            const apiUrl = 'https://api.openai.com/v1/engines/text-davinci-002/completions';
+
+            const headers = {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`
+            };
+
+            const body = JSON.stringify({
+                prompt: returnFullString(),
+                max_tokens: 150,
+                temperature: 0.7
+            });
+
+            try {
+                const response = await fetch(apiUrl, { method: 'POST', headers: headers, body: body });
+                const data = await response.json();
+                console.log(response);
+                console.log(data);
+                const chatGptResponse = removeFalse(data.choices[0].text.trim());
+
+                createChatMessage(`${chatGptResponse}`);
+                speak(chatGptResponse); // Call the text-to-speech function
+                textInput.value = "";
+                textInput.scrollIntoView();
+            } catch (error) {
+                console.error('Error calling ChatGPT API:', error);
+                createChatMessage('AI Tutor: Sorry, something went wrong. ');
+            }
+        }
+
+        // function to remove the random falses at the beginning of the string
+        function removeFalse(string) {
+            if (string.substring(0, 5) === "false") {
+                return removeFalse(string.substring(5));
+            }
+            return string;
+        }
+
+        function getSubstringBefore(string, substring) {
+            // Get the index of the specified string in the original string.
+            const index = string.indexOf(substring);
+
+            // If the specified string is not found, return string.
+            if (index === -1) {
+                return string;
+            }
+
+            // Get the substring before the specified string.
+            const substringBefore = string.slice(index + substring.length, string.length);
+
+            // Return the substring.
+            return substringBefore;
+        }
+
+        // Function to convert AI responses to spoken audio
+        function speak(text) {
+            if ('speechSynthesis' in window) {
+                const msg = new SpeechSynthesisUtterance(getSubstringBefore(text, "AI Tutor: "));
+
+                // Get available voices
+                let voices = [];
+
+                function populateVoices() {
+                    voices = window.speechSynthesis.getVoices();
+                    voices.forEach(voice => {
+                        const option = document.createElement('option');
+                        option.value = voice.lang;
+                        option.textContent = voice.name + ' (' + voice.lang + ')';
+                        voiceSelect.appendChild(option);
+                    });
+                }
+
+                // Chrome fires 'voiceschanged' event when voices are loaded
+                if ('onvoiceschanged' in window.speechSynthesis) {
+                    window.speechSynthesis.onvoiceschanged = populateVoices;
+                }
+
+                populateVoices();
+
+                // Set the desired voice based on the selection
+                const selectedVoice = voiceSelect.value;
+                msg.voice = voices.find(voice => voice.lang === selectedVoice);
+
+                window.speechSynthesis.speak(msg);
+            } else {
+                alert('Text-to-speech is not supported in this browser.');
+            }
+        }
+    </script>
+</body>
+</html>
