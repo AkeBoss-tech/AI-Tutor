@@ -12,6 +12,12 @@
             <h1 class="h-1">Personal AI Tutor</h1>
             <label for="voiceSelect">Select a Voice:</label>
             <select id="voiceSelect"></select>
+            <br>
+            <br>
+            <label for="promptSelect">Select a Topic:</label>
+            <select id="promptSelect"></select>
+            <br>
+            <button class="btn btn-primary" onclick="tryPrompt()" id="promptBtn">Try Prompt</button>
         </div>
         <br>
         <div class="form-group">
@@ -47,9 +53,22 @@
         const apiKeyInput = document.getElementById('apiKeyInput');
         const recorderToggle = document.getElementById('recorderToggle');
         const voiceSelect = document.getElementById("voiceSelect");
+        const promptSelect = document.getElementById("promptSelect");
 
         const preprompt = "You are a tutor for students interested in learning English. You must help them learn new vocabulary and help them speak in realistic scenarios. Use simple language and be sure to define complicated words.";
         let conversation = [preprompt, "AI Tutor: Hi! It's nice to meet you!"];
+
+        const prompts = [
+            ["Vocabulary", "Make a list of words about "],
+            ["Grammar", "What are some common parts of speech?"],
+            ["Conversation", "Let's talk about going to the "]
+        ];
+
+        for (let prompt of prompts) {
+            let option = document.createElement("option");
+            option.text = prompt[0];
+            promptSelect.add(option);
+        }
 
         window.onload(
             doStuff()
@@ -59,6 +78,12 @@
             speak("")
             createChatMessage("AI Tutor: Hi! It's nice to meet you!")
             apiKeyInput.value = (new URL(document.location)).searchParams.get('apiKey');
+        }
+
+        function tryPrompt() {
+            let prompt = promptSelect.value;
+            let text = prompts.find(x => x[0] == prompt)[1];
+            textInput.value += text;
         }
 
         function returnFullString() {
@@ -215,8 +240,11 @@
                 if ('onvoiceschanged' in window.speechSynthesis) {
                     window.speechSynthesis.onvoiceschanged = populateVoices;
                 }
-
-                populateVoices();
+                
+                if (voiceSelect.length <= 0) {
+                    populateVoices();
+                }
+                
 
                 // Set the desired voice based on the selection
                 const selectedVoice = voiceSelect.value;
