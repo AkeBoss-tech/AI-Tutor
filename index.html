@@ -225,9 +225,11 @@
 
                 // Get available voices
                 let voices = [];
+                voices = window.speechSynthesis.getVoices();
 
                 function populateVoices() {
                     voices = window.speechSynthesis.getVoices();
+                    voiceSelect.innerHTML = "";
                     voices.forEach(voice => {
                         const option = document.createElement('option');
                         option.value = voice.lang;
@@ -244,7 +246,6 @@
                 if (voiceSelect.length <= 0) {
                     populateVoices();
                 }
-                
 
                 // Set the desired voice based on the selection
                 const selectedVoice = voiceSelect.value;
