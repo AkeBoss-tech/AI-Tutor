@@ -152,33 +152,62 @@
             "Countries and nationalities",
             "Fruits",
             "Vegetables",
-            "In the city",
-            "In the countryside",
-            "At the beach",
-            "At the park",
-            "At the airport",
-            "At the restaurant",
-            "At the doctor's office",
-            "At the supermarket",
-            "At the movie theater",
-            "At the zoo",
-            "At the museum",
-            "At the library",
-            "At the post office",
-            "At the bank",
-            "At the gym",
-            "At the hotel",
-            "At the office",
-            "At the gas station",
-            "At the farm",
-            "At the bakery",
-            "At the hair salon",
-            "At the amusement park",
-            "At the aquarium",
-            "At the train station",
-            "At the bus stop",
-            "At the police station"
+            "being in the city",
+            "being in the countryside",
+            "being at the beach",
+            "being at the park",
+            "being at the airport",
+            "being at the restaurant",
+            "being at the doctor's office",
+            "being at the supermarket",
+            "being at the movie theater",
+            "being at the zoo",
+            "being at the museum",
+            "being at the library",
+            "being at the post office",
+            "being at the bank",
+            "being at the gym",
+            "being at the hotel",
+            "being at the office",
+            "being at the gas station",
+            "being at the farm",
+            "being at the bakery",
+            "being at the hair salon",
+            "being at the amusement park",
+            "being at the aquarium",
+            "being at the train station",
+            "being at the bus stop",
+            "being at the police station"
         ]
+
+        // Generated Using ChatGPT
+        const grammarQuestions = [
+            "What is the difference between a noun and a pronoun?",
+            "How do you form the plural of regular nouns in English?",
+            "Can you explain the concept of subject-verb agreement?",
+            "What are the basic tenses in English, and how are they used?",
+            "How do you use articles (a, an, the) correctly in English sentences?",
+            "What is the difference between 'much' and 'many'?",
+            "When do you use 'a' and 'an' before a noun, and when do you use 'the'?",
+            "Explain the difference between 'there,' 'their,' and 'they're.'",
+            "How do you form the past simple tense of regular verbs?",
+            "Describe the difference between 'do' and 'does' in questions and negatives.",
+            "What is the difference between 'this,' 'that,' 'these,' and 'those'?",
+            "How do you use adjectives to describe nouns in English?",
+            "Can you explain the use of prepositions in English sentences?",
+            "Describe the difference between 'can' and 'could' for expressing ability.",
+            "What is the passive voice, and how is it formed in English?",
+            "How do you use modal verbs like 'must,' 'should,' and 'might' in sentences?",
+            "Explain the concept of countable and uncountable nouns.",
+            "What are relative clauses, and how are they used in English?",
+            "Describe the difference between 'good' and 'well.'",
+            "How do you form questions in the present simple tense?",
+            "Explain the difference between 'your' and 'you're.'",
+            "What are irregular verbs, and how are they different from regular verbs?",
+            "How do you use 'much' and 'many' in questions and negatives?",
+            "What is the difference between 'between' and 'among'?",
+            "Describe the use of conjunctions in English sentences."
+        ];
 
         for (let prompt of prompts) {
             let option = document.createElement("option");
@@ -187,10 +216,10 @@
         }
 
         window.onload(
-            doStuff()
+            setup()
         )
 
-        function doStuff() {
+        function setup() {
             speak("")
             createChatMessage("AI Tutor: Hi! It's nice to meet you!")
             apiKeyInput.value = (new URL(document.location)).searchParams.get('apiKey');
@@ -198,12 +227,19 @@
 
         function tryPrompt() {
             let prompt = promptSelect.value;
+
+            if (prompt == "Grammar") {
+                textInput.value += grammarQuestions[Math.floor(Math.random() * grammarQuestions.length)];
+                return;
+            }
+
             let text = prompts.find(x => x[0] == prompt)[1];
             textInput.value += text;
-            textInput.value += topics[Math.floor(Math.random() * topics.length)];
+            textInput.value += topics[Math.floor(Math.random() * topics.length)].toLowerCase();
 
         }
 
+        // Creates String to send to ChatGPT
         function returnFullString() {
             let fullString = "";
             for (let i = 0; i < conversation.length; i++) {
@@ -276,11 +312,12 @@
             const apiKey = apiKeyInput.value.trim(); // Get the API key from the input
             
             if (apiKey === '') { // changing this line for maker portfolio intro
-                text = "AI Tutor: Hello Akash! I'm excited to take a look at your maker portfolio. "
+                text = "AI Tutor: Hello Akash! I'm excited to take a look at your projects. "
                 setTimeout(() => {
                     createChatMessage(text) 
                     speak(text)
                 }, 1000);
+                textInput.value = "";
                 return;
             }
 
@@ -342,6 +379,8 @@
         function speak(text) {
             if ('speechSynthesis' in window) {
                 const msg = new SpeechSynthesisUtterance(getSubstringBefore(text, "AI Tutor: "));
+                // speeding it up for now
+                msg.rate = 1.5;
 
                 // Get available voices
                 let voices = [];
